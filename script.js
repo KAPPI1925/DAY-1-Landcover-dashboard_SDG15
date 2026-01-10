@@ -14,7 +14,10 @@ var lulcGroups = null;
 // =====================================================
 // INITIALIZE MAP
 // =====================================================
-var map = L.map('map').setView([22.5, 78.9], 6);
+var map = L.map('map', {
+  attributionControl: false
+}).setView([22.5, 78.9], 6);
+
 
 // -----------------------------------------------------
 // OpenStreetMap Base Layer
@@ -271,5 +274,29 @@ function resetLULC() {
   // Restore full stats
   showStats(lulcGroups);
 }
+
+var customAttribution = L.control({ position: 'bottomleft' });
+
+// =====================================================
+// Custom Attribute
+// =====================================================
+
+customAttribution.onAdd = function () {
+  var div = L.DomUtil.create('div', 'custom-attribution');
+
+  div.innerHTML = `
+    <img src="https://github.com/kappi1925.png" alt="GitHub" />
+    <a href="https://kappi1925.github.io/" target="_blank">
+      Kamalesh Kanna S
+    </a> |
+    © <a href="https://www.openstreetmap.org/" target="_blank">
+      OpenStreetMap
+    </a> contributors
+  `;
+
+  return div;
+};
+
+customAttribution.addTo(map);
 
 
