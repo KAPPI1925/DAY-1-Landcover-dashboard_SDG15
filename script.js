@@ -202,12 +202,6 @@ map.on('overlayadd', e => {
   }
 });
 
-map.on('overlayremove', e => {
-  if (e.layer === lulcLayer) {
-    map.removeControl(legend);
-  }
-});
-
 // =====================================================
 // SHOW LEGEND ON INITIAL LOAD
 // =====================================================
@@ -219,7 +213,9 @@ if (map.hasLayer(lulcLayer)) {
 // FILTER MAP BY LULC CLASS
 // =====================================================
 function filterByClass(classCode) {
+
   if (!lulcStats[classCode]) return;
+
   // Clicking same class again resets
   if (activeClass === classCode) {
     resetLULC();
@@ -228,26 +224,29 @@ function filterByClass(classCode) {
 
   activeClass = classCode;
 
-  // Remove previous overlays
+  // 🔴 HIDE BASE LULC (KEY FIX)
+  if (map.hasLayer(lulcLayer)) {
+    map.removeLayer(lulcLayer);
+  }
+
+  // Remove previous class overlays
   Object.values(classLayers).forEach(layer => {
     if (map.hasLayer(layer)) {
       map.removeLayer(layer);
     }
   });
 
-  // Add selected overlay
+  // Add selected class overlay
   if (classLayers[classCode]) {
     classLayers[classCode].addTo(map);
   }
 
-  // Update stats panel (single class)
+  // Update stats panel
   document.getElementById('statsBox').innerHTML =
     '<b>' + classDict[classCode] + '</b><br>' +
     'Area: ' + lulcStats[classCode].area_km2 + ' km²<br>' +
     'Share: ' + lulcStats[classCode].percent + ' % of India';
 }
-
-
 
 function resetLULC() {
 
@@ -260,11 +259,17 @@ function resetLULC() {
     }
   });
 
+  // 🔵 RESTORE BASE LULC
+  if (!map.hasLayer(lulcLayer)) {
+    lulcLayer.addTo(map);
+  }
+
   // Remove legend highlight
   document.querySelectorAll('.legend-item')
     .forEach(el => el.classList.remove('active'));
 
-  // Restore full statistics
+  // Restore full stats
   showStats(lulcGroups);
 }
+
 
