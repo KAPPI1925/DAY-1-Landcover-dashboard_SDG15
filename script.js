@@ -6,6 +6,10 @@ var lulcPercent = {};
 // Track active class filter
 var activeClass = null;
 
+var lulcStats = {};
+
+var lulcGroups = null;
+
 
 // =====================================================
 // INITIALIZE MAP
@@ -35,23 +39,18 @@ var lulcLayer = L.tileLayer(
 // CLASS-SPECIFIC GEE TILE LAYERS (FILTERING)
 // =====================================================
 var classLayers = {
-  10: L.tileLayer(
-    'https://earthengine.googleapis.com/v1/projects/kappi1925-6d631/maps/a12be6dcefba4ae59bad11753c3f677b-2ddb99d2f68f77076d197d6d975fc6f9/tiles/{z}/{x}/{y}'
-  ),
-  20: L.tileLayer(
-    'https://earthengine.googleapis.com/v1/projects/kappi1925-6d631/maps/3f97b3e1e8125080ccfc193a7911a162-9b3e2e91029ecab71205b29bc94217ef/tiles/{z}/{x}/{y}'
-  ),
-  30: L.tileLayer(
-    'https://earthengine.googleapis.com/v1/projects/kappi1925-6d631/maps/342e1000033a86636ae90d347e6f70cd-3918c65eb6ffe7e7aad38381dd6c2ee2/tiles/{z}/{x}/{y}'
-  ),
-  40: L.tileLayer(
-    'https://earthengine.googleapis.com/v1/projects/kappi1925-6d631/maps/21390df8a902f03ce1ec41c85e4c1108-3424ece877779b9339b60dcf29c27e89/tiles/{z}/{x}/{y}'
-  ),
-  50: L.tileLayer(
-    'https://earthengine.googleapis.com/v1/projects/kappi1925-6d631/maps/352b4ffafc76482f617e940d96e5e17c-380ab4e8ecbf43f79017286de47895eb/tiles/{z}/{x}/{y}'
-  )
+  10: L.tileLayer('https://earthengine.googleapis.com/v1/projects/kappi1925-6d631/maps/86c10f3f764b327cd56b3f3c74942f44-051d968df5ecd36a2e905eb3cf9f2b50/tiles/{z}/{x}/{y}'),
+  20: L.tileLayer('https://earthengine.googleapis.com/v1/projects/kappi1925-6d631/maps/fc3e7a8d5d812930cd5601d8458cbb0a-f7f2a858d920e148a3a33ba4fe202628/tiles/{z}/{x}/{y}'),
+  30: L.tileLayer('https://earthengine.googleapis.com/v1/projects/kappi1925-6d631/maps/d801d0f6b626f4896ba721ccd3bb5e1e-431323b56dcd988c88c2b5525e1afb52/tiles/{z}/{x}/{y}'),
+  40: L.tileLayer('https://earthengine.googleapis.com/v1/projects/kappi1925-6d631/maps/a5a1e2199213d6810db9b622cd8f2f70-29d61e96feba2ce9661785be0e7149d7/tiles/{z}/{x}/{y}'),
+  50: L.tileLayer('https://earthengine.googleapis.com/v1/projects/kappi1925-6d631/maps/d17f0a96f67ac929cefecc4a0fe4a5d4-b6e57a07529c5c22fd4f2c7bc85dd9e4/tiles/{z}/{x}/{y}'),
+  60: L.tileLayer('https://earthengine.googleapis.com/v1/projects/kappi1925-6d631/maps/2dca7a5f721aaf48d93554f70b431a0a-cca1062a816a66f1100c0261deda5c72/tiles/{z}/{x}/{y}'),
+  70: L.tileLayer('https://earthengine.googleapis.com/v1/projects/kappi1925-6d631/maps/3d62c86d6e5ec6341308de7b5315fd08-06fe89e9a6e9c51c0811e9eb05cf927c/tiles/{z}/{x}/{y}'),
+  80: L.tileLayer('https://earthengine.googleapis.com/v1/projects/kappi1925-6d631/maps/1200487e695bd1a13ddc338e2714bb0b-bc0b3593b0e2c5af7f895ec7e8a7d74f/tiles/{z}/{x}/{y}'),
+  90: L.tileLayer('https://earthengine.googleapis.com/v1/projects/kappi1925-6d631/maps/3f19ecd03827812349b5e50e431688c2-af81a025791e227160e8860c8264c6d5/tiles/{z}/{x}/{y}'),
+  95: L.tileLayer('https://earthengine.googleapis.com/v1/projects/kappi1925-6d631/maps/8ee185e3229133f5633a7e3954f459e5-08c13bdba03ee0f27d35600aa39b4623/tiles/{z}/{x}/{y}'),
+  100: L.tileLayer('https://earthengine.googleapis.com/v1/projects/kappi1925-6d631/maps/c3ab55bac6fbd9b0240624d8c27c5083-742d22be327146db6af14151693c8072/tiles/{z}/{x}/{y}')
 };
-
 
 // =====================================================
 // CLASS DICTIONARY
@@ -78,6 +77,7 @@ fetch('data/India_SDG15_LULC_FINAL.geojson')
   .then(data => {
 
     var groups = data.features[0].properties.groups;
+    lulcGroups = groups;
 
     // Total area
     var totalArea = 0;
@@ -85,8 +85,14 @@ fetch('data/India_SDG15_LULC_FINAL.geojson')
 
     // Compute percentage
     groups.forEach(g => {
-      lulcPercent[g.class] = ((g.sum / totalArea) * 100).toFixed(2);
+      lulcStats[g.class] = {
+        area_km2: (g.sum / 1e6).toFixed(2),
+        percent: ((g.sum / totalArea) * 100).toFixed(2)
+      };
+
+      lulcPercent[g.class] = lulcStats[g.class].percent;
     });
+
 
     showStats(groups);
 
@@ -169,8 +175,18 @@ legend.onAdd = function () {
 
     // Click → filter map
     row.onclick = function () {
+
+      // Remove previous highlight
+      document.querySelectorAll('.legend-item')
+        .forEach(el => el.classList.remove('active'));
+
+      // Highlight current
+      row.classList.add('active');
+
       filterByClass(item.code);
     };
+
+
   });
 
 
@@ -203,8 +219,8 @@ if (map.hasLayer(lulcLayer)) {
 // FILTER MAP BY LULC CLASS
 // =====================================================
 function filterByClass(classCode) {
-
-  // Clicking same class again resets map
+  if (!lulcStats[classCode]) return;
+  // Clicking same class again resets
   if (activeClass === classCode) {
     resetLULC();
     return;
@@ -212,37 +228,43 @@ function filterByClass(classCode) {
 
   activeClass = classCode;
 
-  // Remove main LULC layer
-  if (map.hasLayer(lulcLayer)) {
-    map.removeLayer(lulcLayer);
-  }
-
-  // Remove any existing class layers
+  // Remove previous overlays
   Object.values(classLayers).forEach(layer => {
     if (map.hasLayer(layer)) {
       map.removeLayer(layer);
     }
   });
 
-  // Add selected class layer
+  // Add selected overlay
   if (classLayers[classCode]) {
     classLayers[classCode].addTo(map);
   }
+
+  // Update stats panel (single class)
+  document.getElementById('statsBox').innerHTML =
+    '<b>' + classDict[classCode] + '</b><br>' +
+    'Area: ' + lulcStats[classCode].area_km2 + ' km²<br>' +
+    'Share: ' + lulcStats[classCode].percent + ' % of India';
 }
+
+
 
 function resetLULC() {
 
   activeClass = null;
 
-  // Remove all class layers
+  // Remove class overlays
   Object.values(classLayers).forEach(layer => {
     if (map.hasLayer(layer)) {
       map.removeLayer(layer);
     }
   });
 
-  // Restore full LULC layer
-  if (!map.hasLayer(lulcLayer)) {
-    lulcLayer.addTo(map);
-  }
+  // Remove legend highlight
+  document.querySelectorAll('.legend-item')
+    .forEach(el => el.classList.remove('active'));
+
+  // Restore full statistics
+  showStats(lulcGroups);
 }
+

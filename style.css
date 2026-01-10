@@ -42,3 +42,9 @@ h2 {
   margin-right: 8px;
   opacity: 0.9;
 }
+
+.legend-item.active {
+  background: #e6f2ff;
+  font-weight: bold;
+  border-left: 4px solid #0078ff;
+}
