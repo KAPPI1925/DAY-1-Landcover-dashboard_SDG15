@@ -149,17 +149,17 @@ legend.onAdd = function () {
   div.innerHTML = '<b>ESA WorldCover (2021)</b><br>';
 
   var classes = [
-    { code: 10, name: 'Tree cover', color: '#006400' },
-    { code: 20, name: 'Shrubland', color: '#ffbb22' },
-    { code: 30, name: 'Grassland', color: '#ffff4c' },
-    { code: 40, name: 'Cropland', color: '#f096ff' },
-    { code: 50, name: 'Built-up', color: '#fa0000' },
-    { code: 60, name: 'Bare / sparse', color: '#b4b4b4' },
-    { code: 70, name: 'Snow & ice', color: '#f0f0f0' },
-    { code: 80, name: 'Permanent water', color: '#0064c8' },
-    { code: 90, name: 'Herbaceous wetland', color: '#0096a0' },
-    { code: 95, name: 'Mangroves', color: '#00cf75' },
-    { code: 100, name: 'Moss & lichen', color: '#fae6a0' }
+    { code: 10, name: 'Tree cover ', color: '#006400' },
+    { code: 20, name: 'Shrubland ', color: '#ffbb22' },
+    { code: 30, name: 'Grassland ', color: '#ffff4c' },
+    { code: 40, name: 'Cropland ', color: '#f096ff' },
+    { code: 50, name: 'Built-up ', color: '#fa0000' },
+    { code: 60, name: 'Bare / sparse ', color: '#b4b4b4' },
+    { code: 70, name: 'Snow & ice ', color: '#f0f0f0' },
+    { code: 80, name: 'Permanent water ', color: '#0064c8' },
+    { code: 90, name: 'Herbaceous wetland ', color: '#0096a0' },
+    { code: 95, name: 'Mangroves ', color: '#00cf75' },
+    { code: 100, name: 'Moss & lichen ', color: '#fae6a0' }
   ];
 
   classes.forEach(item => {
@@ -290,7 +290,7 @@ customAttribution.onAdd = function () {
       Kamalesh Kanna S
     </a> |
     © <a href="https://www.openstreetmap.org/" target="_blank">
-      OpenStreetMap
+      OSM
     </a> contributors
   `;
 
