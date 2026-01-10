@@ -1,3 +1,8 @@
+// Global object to store percentage values
+var lulcPercent = {};
+
+
+
 // -----------------------------
 // Initialize Map
 // -----------------------------
@@ -39,14 +44,31 @@ var classDict = {
 fetch('data/India_SDG15_LULC_FINAL.geojson')
   .then(res => res.json())
   .then(data => {
+
     var props = data.features[0].properties;
-    var groups = props.groups;   // ✅ FIX
+    var groups = props.groups;
+
+    // Compute total area
+    var totalArea = 0;
+    groups.forEach(g => totalArea += g.sum);
+
+    // Compute percentage per class
+    groups.forEach(function (g) {
+      lulcPercent[g.class] = ((g.sum / totalArea) * 100).toFixed(2);
+    });
+
     showStats(groups);
+
+    // Refresh legend if already visible
+    if (map.hasLayer(lulcLayer)) {
+      map.removeControl(legend);
+      legend.addTo(map);
+    }
   })
   .catch(err => {
     console.error(err);
     document.getElementById('statsBox').innerHTML =
-      '⚠ Failed to load SDG statistics';
+      '⚠ Failed to load LULC statistics';
   });
 
 // -----------------------------
@@ -83,49 +105,52 @@ legend.onAdd = function (map) {
   div.innerHTML += '<b>ESA WorldCover (2021)</b><br>';
 
   var classes = [
-    { name: 'Tree cover', color: '#006400' },
-    { name: 'Shrubland', color: '#ffbb22' },
-    { name: 'Grassland', color: '#ffff4c' },
-    { name: 'Cropland', color: '#f096ff' },
-    { name: 'Built-up', color: '#fa0000' },
-    { name: 'Bare / sparse', color: '#b4b4b4' },
-    { name: 'Snow & ice', color: '#f0f0f0' },
-    { name: 'Permanent water', color: '#0064c8' },
-    { name: 'Herbaceous wetland', color: '#0096a0' },
-    { name: 'Mangroves', color: '#00cf75' },
-    { name: 'Moss & lichen', color: '#fae6a0' }
+    { code: 10, name: 'Tree cover', color: '#006400' },
+    { code: 20, name: 'Shrubland', color: '#ffbb22' },
+    { code: 30, name: 'Grassland', color: '#ffff4c' },
+    { code: 40, name: 'Cropland', color: '#f096ff' },
+    { code: 50, name: 'Built-up', color: '#fa0000' },
+    { code: 60, name: 'Bare / sparse', color: '#b4b4b4' },
+    { code: 70, name: 'Snow & ice', color: '#f0f0f0' },
+    { code: 80, name: 'Permanent water', color: '#0064c8' },
+    { code: 90, name: 'Herbaceous wetland', color: '#0096a0' },
+    { code: 95, name: 'Mangroves', color: '#00cf75' },
+    { code: 100, name: 'Moss & lichen', color: '#fae6a0' }
   ];
 
   classes.forEach(function (item) {
+
+    var percent = lulcPercent[item.code]
+      ? lulcPercent[item.code] + ' %'
+      : '';
+
     div.innerHTML +=
       '<i style="background:' + item.color + '"></i> ' +
-      item.name + '<br>';
+      item.name +
+      '<span style="float:right">' + percent + '</span><br>';
   });
 
-  return div;
-};
+  // -----------------------------
+  // Toggle legend with ESA layer
+  // -----------------------------
 
-// -----------------------------
-// Toggle legend with ESA layer
-// -----------------------------
+  // Show legend when ESA layer is added
+  map.on('overlayadd', function (eventLayer) {
+    if (eventLayer.layer === lulcLayer) {
+      legend.addTo(map);
+    }
+  });
 
-// Show legend when ESA layer is added
-map.on('overlayadd', function (eventLayer) {
-  if (eventLayer.layer === lulcLayer) {
+  // Hide legend when ESA layer is removed
+  map.on('overlayremove', function (eventLayer) {
+    if (eventLayer.layer === lulcLayer) {
+      map.removeControl(legend);
+    }
+  });
+
+  // -----------------------------
+  // Ensure legend is shown on initial load
+  // -----------------------------
+  if (map.hasLayer(lulcLayer)) {
     legend.addTo(map);
   }
-});
-
-// Hide legend when ESA layer is removed
-map.on('overlayremove', function (eventLayer) {
-  if (eventLayer.layer === lulcLayer) {
-    map.removeControl(legend);
-  }
-});
-
-// -----------------------------
-// Ensure legend is shown on initial load
-// -----------------------------
-if (map.hasLayer(lulcLayer)) {
-  legend.addTo(map);
-}
