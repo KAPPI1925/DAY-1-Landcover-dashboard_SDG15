@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <title>SDG-15 | National Land Cover Dashboard</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+  <h2>🌱 SDG-15: Life on Land – National Land Cover</h2>
+
+  <div class="controls">
+    <label>Select Country</label>
+    <select id="countrySelect">
+      <option value="India">India</option>
+    </select>
+  </div>
+
+  <div id="map"></div>
+
+  <div id="statsBox">
+    <b>LULC Statistics</b><br>
+    Select a country to view SDG-15 indicators
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="script.js"></script>
+
+</body>
+
+</html>
