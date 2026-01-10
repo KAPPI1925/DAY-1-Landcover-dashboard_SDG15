@@ -23,13 +23,28 @@
 
   <div id="map"></div>
 
-  <div id="statsBox">
-    <b>LULC Statistics</b><br>
-    Select a country to view SDG-15 indicators
+  <!-- Toggle Button -->
+  <div id="panelToggle">▲ LULC Statistics</div>
+
+  <!-- Bottom Sliding Panel -->
+  <div id="bottomPanel">
+
+    <div class="panel-content">
+
+      <!-- LEFT: Statistics -->
+      <div id="statsBox">
+        <b>Land Cover Statistics (km²)</b><br>
+        Loading…
+      </div>
+
+      <!-- RIGHT: Pie Chart -->
+      <div class="chartBox">
+        <canvas id="lulcPie"></canvas>
+      </div>
+
+    </div>
   </div>
-  <div style="width: 320px; margin-top: 10px;">
-    <canvas id="lulcPie"></canvas>
-  </div>
+
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>

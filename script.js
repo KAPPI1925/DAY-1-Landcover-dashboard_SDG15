@@ -373,3 +373,44 @@ function drawPieChart(groups) {
     }
   });
 }
+
+// =====================================================
+// SLIDE PANEL TOGGLE (FIXED)
+// =====================================================
+// =====================================================
+// SLIDE PANEL TOGGLE + LEGEND SHIFT (FIXED)
+// =====================================================
+var panelOpen = false;
+var panel = document.getElementById('bottomPanel');
+var toggleBtn = document.getElementById('panelToggle');
+
+function moveLegend(up) {
+  var legendEl = document.querySelector('.leaflet-control.legend');
+  if (!legendEl) return;
+
+  if (up) {
+    legendEl.style.transform = 'translateY(-320px)';
+  } else {
+    legendEl.style.transform = 'translateY(0)';
+  }
+}
+
+toggleBtn.onclick = function () {
+
+  panelOpen = !panelOpen;
+
+  if (panelOpen) {
+    panel.classList.add('open');
+    toggleBtn.innerHTML = '▼ Close Statistics';
+    moveLegend(true);
+  } else {
+    panel.classList.remove('open');
+    toggleBtn.innerHTML = '▲ LULC Statistics';
+    moveLegend(false);
+  }
+
+  // Force Leaflet resize after animation
+  setTimeout(function () {
+    map.invalidateSize();
+  }, 420);
+};
