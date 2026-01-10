@@ -1,15 +1,12 @@
 // =====================================================
-// GLOBAL STORE FOR PERCENT VALUES
+// GLOBAL STORE
 // =====================================================
 var lulcPercent = {};
-
 // Track active class filter
 var activeClass = null;
-
 var lulcStats = {};
-
 var lulcGroups = null;
-
+var lulcChart = null;
 
 // =====================================================
 // INITIALIZE MAP
@@ -98,6 +95,8 @@ fetch('data/India_SDG15_LULC_FINAL.geojson')
 
 
     showStats(groups);
+    drawPieChart(groups);
+
 
     // Refresh legend if already visible
     if (map.hasLayer(lulcLayer)) {
@@ -245,10 +244,14 @@ function filterByClass(classCode) {
   }
 
   // Update stats panel
+  // Update stats panel (single class)
   document.getElementById('statsBox').innerHTML =
     '<b>' + classDict[classCode] + '</b><br>' +
     'Area: ' + lulcStats[classCode].area_km2 + ' km²<br>' +
     'Share: ' + lulcStats[classCode].percent + ' % of India';
+
+  drawPieChart(lulcGroups.filter(g => g.class === classCode));
+
 }
 
 function resetLULC() {
@@ -273,6 +276,7 @@ function resetLULC() {
 
   // Restore full stats
   showStats(lulcGroups);
+  drawPieChart(lulcGroups);
 }
 
 var customAttribution = L.control({ position: 'bottomleft' });
@@ -299,4 +303,73 @@ customAttribution.onAdd = function () {
 
 customAttribution.addTo(map);
 
+// =====================================================
+// Charts
+// =====================================================
+function drawPieChart(groups) {
 
+  var labels = [];
+  var data = [];
+  var colors = [];
+
+  var colorMap = {
+    10: '#006400',
+    20: '#ffbb22',
+    30: '#ffff4c',
+    40: '#f096ff',
+    50: '#fa0000',
+    60: '#b4b4b4',
+    70: '#f0f0f0',
+    80: '#0064c8',
+    90: '#0096a0',
+    95: '#00cf75',
+    100: '#fae6a0'
+  };
+
+  groups.forEach(g => {
+    labels.push(classDict[g.class]);
+    data.push(lulcStats[g.class].percent);
+    colors.push(colorMap[g.class]);
+  });
+
+  // Destroy old chart if exists
+  if (lulcChart) {
+    lulcChart.destroy();
+  }
+
+  var ctx = document.getElementById('lulcPie').getContext('2d');
+
+  lulcChart = new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: data,
+        backgroundColor: colors,
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          display: false   // 👈 using custom legend already
+        },
+        tooltip: {
+          callbacks: {
+            label: function (context) {
+              return context.label + ': ' + context.raw + ' %';
+            }
+          }
+        }
+      },
+      onClick: function (evt, elements) {
+        if (elements.length > 0) {
+          var index = elements[0].index;
+          var classCode = groups[index].class;
+          filterByClass(classCode);
+        }
+      }
+    }
+  });
+}
