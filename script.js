@@ -105,5 +105,21 @@ legend.onAdd = function (map) {
   return div;
 };
 
-// Add legend to map
-legend.addTo(map);
+// -----------------------------
+// Toggle legend with ESA layer
+// -----------------------------
+
+// Show legend when ESA layer is added
+map.on('overlayadd', function (eventLayer) {
+  if (eventLayer.layer === lulcLayer) {
+    legend.addTo(map);
+  }
+});
+
+// Hide legend when ESA layer is removed
+map.on('overlayremove', function (eventLayer) {
+  if (eventLayer.layer === lulcLayer) {
+    map.removeControl(legend);
+  }
+});
+
