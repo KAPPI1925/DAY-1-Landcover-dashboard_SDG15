@@ -385,15 +385,21 @@ var panel = document.getElementById('bottomPanel');
 var toggleBtn = document.getElementById('panelToggle');
 
 function moveLegend(up) {
+
   var legendEl = document.querySelector('.leaflet-control.legend');
   if (!legendEl) return;
 
+  // Detect mobile
+  var isMobile = window.innerWidth <= 768;
+  var shift = isMobile ? 420 : 320;
+
   if (up) {
-    legendEl.style.transform = 'translateY(-320px)';
+    legendEl.style.transform = 'translateY(-' + shift + 'px)';
   } else {
     legendEl.style.transform = 'translateY(0)';
   }
 }
+
 
 toggleBtn.onclick = function () {
 
