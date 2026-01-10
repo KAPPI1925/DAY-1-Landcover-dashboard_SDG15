@@ -13,7 +13,7 @@ var osm = L.tileLayer(
 // ESA WorldCover (NEW MapID)
 // -----------------------------
 var lulcLayer = L.tileLayer(
-  'https://earthengine.googleapis.com/map/954125bc301a92b28b1410109bece3ad-3db5a26ca2257aff46dd7c9c51953d8b/{z}/{x}/{y}?token='
+  'https://earthengine.googleapis.com/v1/projects/kappi1925-6d631/maps/954125bc301a92b28b1410109bece3ad-eba78f2bca909ad1cc5257fc92500a5a/tiles/{z}/{x}/{y}'
 ).addTo(map);
 
 // -----------------------------
