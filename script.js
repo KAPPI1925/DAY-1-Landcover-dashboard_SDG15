@@ -1,29 +1,35 @@
-// Global object to store percentage values
+// =====================================================
+// GLOBAL STORE FOR PERCENT VALUES
+// =====================================================
 var lulcPercent = {};
 
+// =====================================================
+// INITIALIZE MAP
+// =====================================================
+var map = L.map('map').setView([22.5, 78.9], 6);
 
-
-// -----------------------------
-// Initialize Map
-// -----------------------------
-var map = L.map('map').setView([22.5, 78.9], 5);
-
-// OSM
+// -----------------------------------------------------
+// OpenStreetMap Base Layer
+// -----------------------------------------------------
 var osm = L.tileLayer(
   'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
   { attribution: '&copy; OpenStreetMap contributors' }
 ).addTo(map);
 
-// -----------------------------
-// ESA WorldCover (NEW MapID)
-// -----------------------------
+// -----------------------------------------------------
+// ESA WorldCover (GEE Tile URL from urlFormat)
+// -----------------------------------------------------
 var lulcLayer = L.tileLayer(
-  'https://earthengine.googleapis.com/v1/projects/kappi1925-6d631/maps/954125bc301a92b28b1410109bece3ad-eba78f2bca909ad1cc5257fc92500a5a/tiles/{z}/{x}/{y}'
+  'https://earthengine.googleapis.com/v1/projects/kappi1925-6d631/maps/954125bc301a92b28b1410109bece3ad-eba78f2bca909ad1cc5257fc92500a5a/tiles/{z}/{x}/{y}',
+  {
+    minZoom: 5,
+    maxZoom: 12
+  }
 ).addTo(map);
 
-// -----------------------------
-// Class Dictionary
-// -----------------------------
+// =====================================================
+// CLASS DICTIONARY
+// =====================================================
 var classDict = {
   10: 'Tree cover',
   20: 'Shrubland',
@@ -38,22 +44,21 @@ var classDict = {
   100: 'Moss & lichen'
 };
 
-// -----------------------------
-// Load SDG GeoJSON (FIXED PATH)
-// -----------------------------
+// =====================================================
+// LOAD SDG-15 GEOJSON AND COMPUTE %
+/* =================================================== */
 fetch('data/India_SDG15_LULC_FINAL.geojson')
   .then(res => res.json())
   .then(data => {
 
-    var props = data.features[0].properties;
-    var groups = props.groups;
+    var groups = data.features[0].properties.groups;
 
-    // Compute total area
+    // Total area
     var totalArea = 0;
     groups.forEach(g => totalArea += g.sum);
 
-    // Compute percentage per class
-    groups.forEach(function (g) {
+    // Compute percentage
+    groups.forEach(g => {
       lulcPercent[g.class] = ((g.sum / totalArea) * 100).toFixed(2);
     });
 
@@ -71,38 +76,41 @@ fetch('data/India_SDG15_LULC_FINAL.geojson')
       '⚠ Failed to load LULC statistics';
   });
 
-// -----------------------------
-// Display Stats
-// -----------------------------
+// =====================================================
+// DISPLAY STATISTICS PANEL
+// =====================================================
 function showStats(groups) {
 
   var html = '<b>Land Cover Statistics (km²)</b><br><br>';
 
-  groups.forEach(function (g) {
-    var area_km2 = (g.sum / 1e6).toFixed(2);
-    html += classDict[g.class] + ': ' + area_km2 + '<br>';
+  groups.forEach(g => {
+    html +=
+      classDict[g.class] +
+      ': ' +
+      (g.sum / 1e6).toFixed(2) +
+      ' km²<br>';
   });
 
   document.getElementById('statsBox').innerHTML = html;
 }
 
-// -----------------------------
-// Layer Control
-// -----------------------------
+// =====================================================
+// LAYER CONTROL
+// =====================================================
 L.control.layers(
-  { "OpenStreetMap": osm },
-  { "ESA WorldCover": lulcLayer }
+  { 'OpenStreetMap': osm },
+  { 'ESA WorldCover': lulcLayer }
 ).addTo(map);
 
-// -----------------------------
-// ESA WorldCover Legend
-// -----------------------------
+// =====================================================
+// LEGEND DEFINITION (WITH % VALUES)
+// =====================================================
 var legend = L.control({ position: 'bottomright' });
 
-legend.onAdd = function (map) {
+legend.onAdd = function () {
 
   var div = L.DomUtil.create('div', 'legend');
-  div.innerHTML += '<b>ESA WorldCover (2021)</b><br>';
+  div.innerHTML = '<b>ESA WorldCover (2021)</b><br>';
 
   var classes = [
     { code: 10, name: 'Tree cover', color: '#006400' },
@@ -118,7 +126,7 @@ legend.onAdd = function (map) {
     { code: 100, name: 'Moss & lichen', color: '#fae6a0' }
   ];
 
-  classes.forEach(function (item) {
+  classes.forEach(item => {
 
     var percent = lulcPercent[item.code]
       ? lulcPercent[item.code] + ' %'
@@ -130,27 +138,27 @@ legend.onAdd = function (map) {
       '<span style="float:right">' + percent + '</span><br>';
   });
 
-  // -----------------------------
-  // Toggle legend with ESA layer
-  // -----------------------------
+  return div;
+};
 
-  // Show legend when ESA layer is added
-  map.on('overlayadd', function (eventLayer) {
-    if (eventLayer.layer === lulcLayer) {
-      legend.addTo(map);
-    }
-  });
-
-  // Hide legend when ESA layer is removed
-  map.on('overlayremove', function (eventLayer) {
-    if (eventLayer.layer === lulcLayer) {
-      map.removeControl(legend);
-    }
-  });
-
-  // -----------------------------
-  // Ensure legend is shown on initial load
-  // -----------------------------
-  if (map.hasLayer(lulcLayer)) {
+// =====================================================
+// TOGGLE LEGEND WITH ESA LAYER
+// =====================================================
+map.on('overlayadd', e => {
+  if (e.layer === lulcLayer) {
     legend.addTo(map);
   }
+});
+
+map.on('overlayremove', e => {
+  if (e.layer === lulcLayer) {
+    map.removeControl(legend);
+  }
+});
+
+// =====================================================
+// SHOW LEGEND ON INITIAL LOAD
+// =====================================================
+if (map.hasLayer(lulcLayer)) {
+  legend.addTo(map);
+}
