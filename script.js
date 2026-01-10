@@ -71,3 +71,39 @@ L.control.layers(
   { "OpenStreetMap": osm },
   { "ESA WorldCover": lulcLayer }
 ).addTo(map);
+
+// -----------------------------
+// ESA WorldCover Legend
+// -----------------------------
+var legend = L.control({ position: 'bottomright' });
+
+legend.onAdd = function (map) {
+
+  var div = L.DomUtil.create('div', 'legend');
+  div.innerHTML += '<b>ESA WorldCover (2021)</b><br>';
+
+  var classes = [
+    { name: 'Tree cover', color: '#006400' },
+    { name: 'Shrubland', color: '#ffbb22' },
+    { name: 'Grassland', color: '#ffff4c' },
+    { name: 'Cropland', color: '#f096ff' },
+    { name: 'Built-up', color: '#fa0000' },
+    { name: 'Bare / sparse', color: '#b4b4b4' },
+    { name: 'Snow & ice', color: '#f0f0f0' },
+    { name: 'Permanent water', color: '#0064c8' },
+    { name: 'Herbaceous wetland', color: '#0096a0' },
+    { name: 'Mangroves', color: '#00cf75' },
+    { name: 'Moss & lichen', color: '#fae6a0' }
+  ];
+
+  classes.forEach(function (item) {
+    div.innerHTML +=
+      '<i style="background:' + item.color + '"></i> ' +
+      item.name + '<br>';
+  });
+
+  return div;
+};
+
+// Add legend to map
+legend.addTo(map);
