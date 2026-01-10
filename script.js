@@ -3,6 +3,10 @@
 // =====================================================
 var lulcPercent = {};
 
+// Track active class filter
+var activeClass = null;
+
+
 // =====================================================
 // INITIALIZE MAP
 // =====================================================
@@ -26,6 +30,28 @@ var lulcLayer = L.tileLayer(
     maxZoom: 12
   }
 ).addTo(map);
+
+// =====================================================
+// CLASS-SPECIFIC GEE TILE LAYERS (FILTERING)
+// =====================================================
+var classLayers = {
+  10: L.tileLayer(
+    'https://earthengine.googleapis.com/v1/projects/kappi1925-6d631/maps/a12be6dcefba4ae59bad11753c3f677b-2ddb99d2f68f77076d197d6d975fc6f9/tiles/{z}/{x}/{y}'
+  ),
+  20: L.tileLayer(
+    'https://earthengine.googleapis.com/v1/projects/kappi1925-6d631/maps/3f97b3e1e8125080ccfc193a7911a162-9b3e2e91029ecab71205b29bc94217ef/tiles/{z}/{x}/{y}'
+  ),
+  30: L.tileLayer(
+    'https://earthengine.googleapis.com/v1/projects/kappi1925-6d631/maps/342e1000033a86636ae90d347e6f70cd-3918c65eb6ffe7e7aad38381dd6c2ee2/tiles/{z}/{x}/{y}'
+  ),
+  40: L.tileLayer(
+    'https://earthengine.googleapis.com/v1/projects/kappi1925-6d631/maps/21390df8a902f03ce1ec41c85e4c1108-3424ece877779b9339b60dcf29c27e89/tiles/{z}/{x}/{y}'
+  ),
+  50: L.tileLayer(
+    'https://earthengine.googleapis.com/v1/projects/kappi1925-6d631/maps/352b4ffafc76482f617e940d96e5e17c-380ab4e8ecbf43f79017286de47895eb/tiles/{z}/{x}/{y}'
+  )
+};
+
 
 // =====================================================
 // CLASS DICTIONARY
@@ -110,6 +136,7 @@ var legend = L.control({ position: 'bottomright' });
 legend.onAdd = function () {
 
   var div = L.DomUtil.create('div', 'legend');
+  L.DomEvent.disableClickPropagation(div);
   div.innerHTML = '<b>ESA WorldCover (2021)</b><br>';
 
   var classes = [
@@ -128,15 +155,24 @@ legend.onAdd = function () {
 
   classes.forEach(item => {
 
-    var percent = lulcPercent[item.code]
-      ? lulcPercent[item.code] + ' %'
-      : '';
+    // Create one clickable row
+    var row = L.DomUtil.create('div', 'legend-item', div);
 
-    div.innerHTML +=
+    row.innerHTML =
       '<i style="background:' + item.color + '"></i> ' +
-      item.name +
-      '<span style="float:right">' + percent + '</span><br>';
+      '<span class="legend-label">' + item.name + '</span>' +
+      '<span class="legend-percent">' +
+      (lulcPercent[item.code] ? lulcPercent[item.code] + ' %' : '') +
+      '</span>';
+
+    row.style.cursor = 'pointer';
+
+    // Click → filter map
+    row.onclick = function () {
+      filterByClass(item.code);
+    };
   });
+
 
   return div;
 };
@@ -161,4 +197,52 @@ map.on('overlayremove', e => {
 // =====================================================
 if (map.hasLayer(lulcLayer)) {
   legend.addTo(map);
+}
+
+// =====================================================
+// FILTER MAP BY LULC CLASS
+// =====================================================
+function filterByClass(classCode) {
+
+  // Clicking same class again resets map
+  if (activeClass === classCode) {
+    resetLULC();
+    return;
+  }
+
+  activeClass = classCode;
+
+  // Remove main LULC layer
+  if (map.hasLayer(lulcLayer)) {
+    map.removeLayer(lulcLayer);
+  }
+
+  // Remove any existing class layers
+  Object.values(classLayers).forEach(layer => {
+    if (map.hasLayer(layer)) {
+      map.removeLayer(layer);
+    }
+  });
+
+  // Add selected class layer
+  if (classLayers[classCode]) {
+    classLayers[classCode].addTo(map);
+  }
+}
+
+function resetLULC() {
+
+  activeClass = null;
+
+  // Remove all class layers
+  Object.values(classLayers).forEach(layer => {
+    if (map.hasLayer(layer)) {
+      map.removeLayer(layer);
+    }
+  });
+
+  // Restore full LULC layer
+  if (!map.hasLayer(lulcLayer)) {
+    lulcLayer.addTo(map);
+  }
 }
