@@ -21,7 +21,7 @@ var map = L.map('map').setView([22.5, 78.9], 6);
 // -----------------------------------------------------
 var osm = L.tileLayer(
   'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-  { attribution: '&copy; OpenStreetMap contributors' }
+  { attribution: '&copy; KAPPI1925' }
 ).addTo(map);
 
 // -----------------------------------------------------
