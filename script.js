@@ -123,3 +123,9 @@ map.on('overlayremove', function (eventLayer) {
   }
 });
 
+// -----------------------------
+// Ensure legend is shown on initial load
+// -----------------------------
+if (map.hasLayer(lulcLayer)) {
+  legend.addTo(map);
+}
