@@ -86,7 +86,16 @@ function loadCountry(name) {
       'ESA WorldCover',
       true
     ),
-    ui.Map.Layer(country, { color: 'black' }, name + ' Boundary')
+    ui.Map.Layer(
+      country.style({
+        color: 'black',      // boundary color
+        width: 2,            // boundary thickness
+        fillColor: '00000000' // transparent fill
+      }),
+      {},
+      name + ' Boundary'
+    )
+
   ]);
 
   updateStatsPanel(null);
