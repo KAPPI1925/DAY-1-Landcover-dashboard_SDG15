@@ -33,7 +33,9 @@ var classInfo = {
 };
 
 var classCodes = Object.keys(classInfo).map(Number);
-var palette = classCodes.map(function (c) { return classInfo[c].color; });
+var palette = classCodes.map(function (c) {
+  return classInfo[c].color;
+});
 
 // ==================================================
 // 3. MAP WIDGET
@@ -43,31 +45,25 @@ var map = ui.Map();
 map.setOptions('SATELLITE');
 
 // ==================================================
-// COUNTRY SELECT (FIXED – CLIENT SIDE)
+// 4. COUNTRY DROPDOWN (CLIENT SIDE SAFE)
 // ==================================================
 
 var countrySelect = ui.Select({
   placeholder: 'Select Country'
 });
 
-// Populate dropdown safely
 countries.aggregate_array('country_na').evaluate(function (list) {
-
   list.sort();
-
   countrySelect.items().reset(list);
-
-  // Default country
   countrySelect.setValue('India', false);
 });
 
-// On change
 countrySelect.onChange(function (name) {
   loadCountry(name);
 });
 
 // ==================================================
-// 5. LOAD COUNTRY FUNCTION
+// 5. LOAD COUNTRY
 // ==================================================
 
 var country, countryGeom;
@@ -88,21 +84,20 @@ function loadCountry(name) {
     ),
     ui.Map.Layer(
       country.style({
-        color: 'black',      // boundary color
-        width: 2,            // boundary thickness
-        fillColor: '00000000' // transparent fill
+        color: 'black',
+        width: 2,
+        fillColor: '00000000'
       }),
       {},
       name + ' Boundary'
     )
-
   ]);
 
   updateStatsPanel(null);
 }
 
 // ==================================================
-// 6. AREA STATS
+// 6. AREA STATISTICS
 // ==================================================
 
 function computeAreaStats() {
@@ -157,7 +152,7 @@ function resetLULC() {
 // ==================================================
 
 var statsLabel = ui.Label('', { whiteSpace: 'pre' });
-var piePanel = ui.Panel();
+var pieChartPanel = ui.Panel();
 
 function updateStatsPanel(selectedClass) {
 
@@ -165,6 +160,7 @@ function updateStatsPanel(selectedClass) {
 
     if (!g) {
       statsLabel.setValue('No statistics available');
+      pieChartPanel.clear();
       return;
     }
 
@@ -172,7 +168,7 @@ function updateStatsPanel(selectedClass) {
     g.forEach(function (d) { total += d.sum; });
 
     var text = 'Land Cover Statistics (km²)\n\n';
-    piePanel.clear();
+    var chartData = [['Class', 'Percentage']];
 
     g.forEach(function (d) {
 
@@ -184,19 +180,31 @@ function updateStatsPanel(selectedClass) {
           ': ' + area + ' km² (' + pct + '%)\n';
       }
 
-      piePanel.add(
-        ui.Label(classInfo[d.class].name + ': ' + pct + '%', {
-          color: classInfo[d.class].color
-        })
-      );
+      chartData.push([classInfo[d.class].name, Number(pct)]);
     });
 
     statsLabel.setValue(text);
+
+    pieChartPanel.clear();
+
+    var pieChart = ui.Chart(chartData)
+      .setChartType('PieChart')
+      .setOptions({
+        title: 'LULC Composition (%)',
+        legend: { position: 'right' },
+        pieHole: 0.35,
+        chartArea: { width: '90%', height: '90%' },
+        colors: classCodes.map(function (c) {
+          return classInfo[c].color;
+        })
+      });
+
+    pieChartPanel.add(pieChart);
   });
 }
 
 // ==================================================
-// 9. LEGEND WITH COLOR SWATCHES
+// 9. LEGEND
 // ==================================================
 
 var legend = ui.Panel();
@@ -240,7 +248,7 @@ var exportBtn = ui.Button({
 });
 
 // ==================================================
-// 11. UI CONTROLS
+// 11. CLASS SELECT
 // ==================================================
 
 var classSelect = ui.Select({
@@ -248,32 +256,46 @@ var classSelect = ui.Select({
   items: classCodes.map(function (c) {
     return { label: classInfo[c].name, value: c };
   }),
-  onChange: function (v) { showClass(Number(v)); }
+  onChange: function (v) {
+    showClass(Number(v));
+  }
 });
 
 var resetButton = ui.Button('Show Full LULC', resetLULC);
 
 // ==================================================
-// 12. RESPONSIVE LAYOUT
+// 12. FINAL LAYOUT
 // ==================================================
 
 ui.root.clear();
 
 var controlPanel = ui.Panel({
   widgets: [
-    ui.Label('SDG-15 | National Land Cover', {
-      fontWeight: 'bold', fontSize: '16px'
+
+    ui.Label('SDG-15 | National Land Cover Dashboard', {
+      fontWeight: 'bold',
+      fontSize: '16px',
+      margin: '0 0 8px 0'
     }),
+
     countrySelect,
+
+    ui.Label(''),
+    ui.Label('Legend', { fontWeight: 'bold' }),
+    legend,
+
+    ui.Label(''),
+    ui.Label('Statistics', { fontWeight: 'bold' }),
+    statsLabel,
+
+    ui.Label(''),
+    ui.Label('LULC Composition', { fontWeight: 'bold' }),
+    pieChartPanel,
+
+    ui.Label(''),
     classSelect,
     resetButton,
-    exportBtn,
-    ui.Label(''),
-    statsLabel,
-    ui.Label('Legend'),
-    legend,
-    ui.Label('Pie Summary'),
-    piePanel
+    exportBtn
   ],
   style: {
     width: '340px',
@@ -291,5 +313,5 @@ mainLayout.add(controlPanel);
 mainLayout.add(map);
 ui.root.add(mainLayout);
 
-// Load default
+// Load default country
 loadCountry('India');
