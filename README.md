@@ -4,9 +4,8 @@ An interactive **Web GIS dashboard** visualizing **national land cover (LULC)** 
 
 This project is part of my **100 Days Geospatial Challenge** to build application-oriented, open, and reproducible geospatial tools for research, policy, and sustainability.
 
-🔗 **Live Demo**  
-👉 https://kappi1925.github.io/DAY-1-Landcover-dashboard_SDG15/
-
+🔗 **Live**  
+👉 https://kappi1925.projects.earthengine.app/view/sdg-15-national-land-cover-dashboard
 ---
 ## 🎯 Project Objectives
 
