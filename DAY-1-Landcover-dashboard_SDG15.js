@@ -1,40 +1,21 @@
 /***************************************
  * SDG-15 National Land Cover Dashboard
  * Dataset : ESA WorldCover v200 (2021)
- * Country : India
  * Platform: Google Earth Engine App
  ***************************************/
 
 // ==================================================
-// 1. LOAD DATA
+// 1. DATA
 // ==================================================
 
 var lulc = ee.Image('ESA/WorldCover/v200/2021')
   .select('Map')
-  .reproject({
-    crs: 'EPSG:4326',
-    scale: 500
-  });
+  .reproject({ crs: 'EPSG:4326', scale: 500 });
 
 var countries = ee.FeatureCollection('USDOS/LSIB_SIMPLE/2017');
-var countryName = 'India';
-
-var country = countries.filter(
-  ee.Filter.eq('country_na', countryName)
-);
-
-var countryGeom = country.geometry().simplify(1000);
 
 // ==================================================
-// 2. CREATE MAP WIDGET (IMPORTANT)
-// ==================================================
-
-var map = ui.Map();
-map.setOptions('SATELLITE');
-map.centerObject(country, 5);
-
-// ==================================================
-// 3. CLASS INFO
+// 2. CLASS INFO
 // ==================================================
 
 var classInfo = {
@@ -52,35 +33,74 @@ var classInfo = {
 };
 
 var classCodes = Object.keys(classInfo).map(Number);
+var palette = classCodes.map(function (c) { return classInfo[c].color; });
 
-// Palette (ES5 safe)
-var palette = classCodes.map(function (c) {
-  return classInfo[c].color;
+// ==================================================
+// 3. MAP WIDGET
+// ==================================================
+
+var map = ui.Map();
+map.setOptions('SATELLITE');
+
+// ==================================================
+// COUNTRY SELECT (FIXED – CLIENT SIDE)
+// ==================================================
+
+var countrySelect = ui.Select({
+  placeholder: 'Select Country'
+});
+
+// Populate dropdown safely
+countries.aggregate_array('country_na').evaluate(function (list) {
+
+  list.sort();
+
+  countrySelect.items().reset(list);
+
+  // Default country
+  countrySelect.setValue('India', false);
+});
+
+// On change
+countrySelect.onChange(function (name) {
+  loadCountry(name);
 });
 
 // ==================================================
-// 4. BASE LULC LAYER
+// 5. LOAD COUNTRY FUNCTION
 // ==================================================
 
-var lulcLayer = ui.Map.Layer(
-  lulc.clip(country),
-  { min: 10, max: 100, palette: palette },
-  'ESA WorldCover 2021',
-  true
-);
+var country, countryGeom;
 
-map.layers().set(0, lulcLayer);
-map.addLayer(country, { color: 'black' }, 'India Boundary');
+function loadCountry(name) {
+
+  country = countries.filter(ee.Filter.eq('country_na', name));
+  countryGeom = country.geometry().simplify(1000);
+
+  map.centerObject(country, 5);
+
+  map.layers().reset([
+    ui.Map.Layer(
+      lulc.clip(country),
+      { min: 10, max: 100, palette: palette },
+      'ESA WorldCover',
+      true
+    ),
+    ui.Map.Layer(country, { color: 'black' }, name + ' Boundary')
+  ]);
+
+  updateStatsPanel(null);
+}
 
 // ==================================================
-// 5. AREA STATISTICS
+// 6. AREA STATS
 // ==================================================
 
-function computeAreaStats(image) {
+function computeAreaStats() {
 
-  var areaImg = ee.Image.pixelArea().addBands(image);
+  var areaImg = ee.Image.pixelArea().addBands(lulc);
 
-  var stats = areaImg.reduceRegion({
+  return areaImg.reduceRegion({
     reducer: ee.Reducer.sum().group({
       groupField: 1,
       groupName: 'class'
@@ -89,13 +109,11 @@ function computeAreaStats(image) {
     scale: 500,
     maxPixels: 1e13,
     tileScale: 8
-  });
-
-  return stats.get('groups');
+  }).get('groups');
 }
 
 // ==================================================
-// 6. CLASS FILTER
+// 7. CLASS FILTER
 // ==================================================
 
 function showClass(code) {
@@ -104,22 +122,19 @@ function showClass(code) {
     map.layers().remove(map.layers().get(2));
   }
 
-  var classImg = lulc.eq(code).selfMask().clip(country);
+  var img = lulc.eq(code).selfMask().clip(country);
 
-  var classLayer = ui.Map.Layer(
-    classImg,
-    { palette: [classInfo[code].color] },
-    classInfo[code].name,
-    true
+  map.layers().add(
+    ui.Map.Layer(
+      img,
+      { palette: [classInfo[code].color] },
+      classInfo[code].name,
+      true
+    )
   );
 
-  map.layers().add(classLayer);
   updateStatsPanel(code);
 }
-
-// ==================================================
-// 7. RESET
-// ==================================================
 
 function resetLULC() {
   while (map.layers().length() > 2) {
@@ -129,90 +144,130 @@ function resetLULC() {
 }
 
 // ==================================================
-// 8. STATISTICS PANEL
+// 8. STATISTICS + PIE CHART
 // ==================================================
 
-var statsLabel = ui.Label('Loading statistics…', { whiteSpace: 'pre' });
+var statsLabel = ui.Label('', { whiteSpace: 'pre' });
+var piePanel = ui.Panel();
 
 function updateStatsPanel(selectedClass) {
 
-  var groups = computeAreaStats(lulc);
-
-  groups.evaluate(function (g) {
+  computeAreaStats().evaluate(function (g) {
 
     if (!g) {
-      statsLabel.setValue('Statistics unavailable');
+      statsLabel.setValue('No statistics available');
       return;
     }
 
-    var totalArea = 0;
-    g.forEach(function (d) {
-      totalArea += d.sum;
-    });
+    var total = 0;
+    g.forEach(function (d) { total += d.sum; });
 
     var text = 'Land Cover Statistics (km²)\n\n';
+    piePanel.clear();
 
     g.forEach(function (d) {
 
-      var areaKm2 = (d.sum / 1e6).toFixed(2);
-      var percent = ((d.sum / totalArea) * 100).toFixed(2);
+      var area = (d.sum / 1e6).toFixed(2);
+      var pct = ((d.sum / total) * 100).toFixed(2);
 
       if (!selectedClass || d.class === selectedClass) {
         text += classInfo[d.class].name +
-          ': ' + areaKm2 + ' km² (' + percent + '%)\n';
+          ': ' + area + ' km² (' + pct + '%)\n';
       }
+
+      piePanel.add(
+        ui.Label(classInfo[d.class].name + ': ' + pct + '%', {
+          color: classInfo[d.class].color
+        })
+      );
     });
 
     statsLabel.setValue(text);
   });
 }
 
-updateStatsPanel(null);
-
 // ==================================================
-// 9. UI CONTROLS
+// 9. LEGEND WITH COLOR SWATCHES
 // ==================================================
 
-var selectItems = classCodes.map(function (c) {
-  return {
-    label: classInfo[c].name,
-    value: c
-  };
+var legend = ui.Panel();
+
+classCodes.forEach(function (c) {
+  legend.add(
+    ui.Panel({
+      layout: ui.Panel.Layout.flow('horizontal'),
+      widgets: [
+        ui.Label('', {
+          backgroundColor: classInfo[c].color,
+          padding: '8px',
+          margin: '0 6px 0 0'
+        }),
+        ui.Label(classInfo[c].name)
+      ]
+    })
+  );
 });
 
-var classSelect = ui.Select({
-  items: selectItems,
-  placeholder: 'Select LULC Class',
-  onChange: function (value) {
-    showClass(Number(value));
+// ==================================================
+// 10. EXPORT BUTTON
+// ==================================================
+
+var exportBtn = ui.Button({
+  label: 'Export Statistics (CSV)',
+  onClick: function () {
+
+    var fc = ee.FeatureCollection(
+      computeAreaStats().map(function (d) {
+        return ee.Feature(null, d);
+      })
+    );
+
+    Export.table.toDrive({
+      collection: fc,
+      description: 'SDG15_LULC_' + countrySelect.getValue(),
+      fileFormat: 'CSV'
+    });
   }
 });
 
-var resetButton = ui.Button({
-  label: 'Show Full LULC',
-  onClick: resetLULC
+// ==================================================
+// 11. UI CONTROLS
+// ==================================================
+
+var classSelect = ui.Select({
+  placeholder: 'Select LULC Class',
+  items: classCodes.map(function (c) {
+    return { label: classInfo[c].name, value: c };
+  }),
+  onChange: function (v) { showClass(Number(v)); }
 });
 
+var resetButton = ui.Button('Show Full LULC', resetLULC);
+
 // ==================================================
-// 10. APP LAYOUT (LEFT PANEL + MAP)
+// 12. RESPONSIVE LAYOUT
 // ==================================================
 
 ui.root.clear();
 
 var controlPanel = ui.Panel({
   widgets: [
-    ui.Label('SDG-15 | National Land Cover (India)', {
-      fontWeight: 'bold',
-      fontSize: '16px',
-      margin: '0 0 8px 0'
+    ui.Label('SDG-15 | National Land Cover', {
+      fontWeight: 'bold', fontSize: '16px'
     }),
+    countrySelect,
     classSelect,
     resetButton,
+    exportBtn,
     ui.Label(''),
-    statsLabel
+    statsLabel,
+    ui.Label('Legend'),
+    legend,
+    ui.Label('Pie Summary'),
+    piePanel
   ],
   style: {
-    width: '320px',
+    width: '340px',
     padding: '10px',
     backgroundColor: 'white'
   }
@@ -225,5 +280,7 @@ var mainLayout = ui.Panel({
 
 mainLayout.add(controlPanel);
 mainLayout.add(map);
-
 ui.root.add(mainLayout);
+
+// Load default
+loadCountry('India');
